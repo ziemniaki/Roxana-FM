@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROXANA FM 💋</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-image: url('1.jpg');
+            background-size: cover;
+            background-position: center;
+            color: #e94560;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #visualizer {
+            width: 100%;
+            height: 100%;
+        }
+        #togglePlay {
+            position: absolute;
+            bottom: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #0f3460;
+            color: #e94560;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+    <svg id="visualizer" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+        <circle id="bassCircle" cx="50" cy="50" r="40" fill="#0f3460" />
+        <text id="melodyEmoji" x="50" y="50" font-size="20" text-anchor="middle" dominant-baseline="middle">🕶</text>
+        <text id="drumEmoji" x="50" y="80" font-size="15" text-anchor="middle" dominant-baseline="middle">💋</text>
+    </svg>
+    <button id="togglePlay">Play Roxana FM ⏯</button>
+
+    <script>
+        // (The rest of the JavaScript code remains unchanged)
+    </script>
+</body>
+</html>
+
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let isPlaying = false;
+        let currentChordIndex = 0;
+        let currentProgressionIndex = 0;
+        let nextNoteTime = 0;
+        let shortNoteProbability = 0.4;
+        let drumBarCount = 0;
+
+        const progressions = [
+            ['Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'Bm7b5'],
+            ['C', 'a', 'd', 'G'],
+            ['d', 'd', 'G', 'G'],
+            ['C', 'a', 'F', 'a'],
+            ['a', 'a', 'e', 'e'],
+            ['F', 'F', 'e', 'e'],
+            ['C', 'd', 'e', 'd'],
+            ['a', 'a', 'F', 'e'],
+            ['a', 'a', 'F', 'F'],
+            ['C', 'd', 'e', 'e'],
+            ['a', 'G', 'F', 'e'],
+            ['C', 'C', 'd', 'd']
+        ];
+
+        function createSynth() {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            return { osc, gain };
+        }
+
+        function getChordNotes(chord) {
+            const rootNotes = {'C': 261.63, 'D': 293.66, 'E': 329.63, 'F': 349.23, 'G': 392.00, 'A': 440.00, 'B': 493.88};
+            const root = rootNotes[chord[0].toUpperCase()];
+            let intervals;
+
+            if (chord.includes('maj7') || chord.length === 1) {
+                intervals = [0, 4, 7, 11];
+            } else if (chord.includes('m7b5')) {
+                intervals = [0, 3, 6, 10];
+            } else if (chord.includes('7') || chord.toLowerCase() === chord) {
+                intervals = [0, 3, 7, 10];
+            } else {
+                intervals = [0, 4, 7, 11]; // Default to maj7
+            }
+
+            return intervals.map(interval => root * Math.pow(2, interval / 12));
+        }
+
+        function createNoiseBuffer() {
+            const bufferSize = audioContext.sampleRate;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            return buffer;
+        }
+
+        function playDrum(time, frequency, decay) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.frequency.setValueAtTime(frequency, time);
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(time);
+            osc.stop(time + decay);
+        }
+
+        function playKick(time) {
+            playDrum(time, 60, 0.3);
+        }
+
+        function playSnare(time) {
+            const noise = audioContext.createBufferSource();
+            noise.buffer = createNoiseBuffer();
+            const noiseFilter = audioContext.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 1000;
+            const noiseEnvelope = audioContext.createGain();
+            noiseEnvelope.gain.setValueAtTime(1, time);
+            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseEnvelope);
+            noiseEnvelope.connect(audioContext.destination);
+            noise.start(time);
+            noise.stop(time + 0.2);
+
+            playDrum(time, 150, 0.1);
+        }
+
+        function playHiHat(time, duration) {
+            const noise = audioContext.createBufferSource();
+            noise.buffer = createNoiseBuffer();
+            const noiseFilter = audioContext.createBiquadFilter();
+            noiseFilter.type = 'highpass';
+            noiseFilter.frequency.value = 10000;
+            const noiseEnvelope = audioContext.createGain();
+            noiseEnvelope.gain.setValueAtTime(0.2, time);
+            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + duration);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseEnvelope);
+            noiseEnvelope.connect(audioContext.destination);
+            noise.start(time);
+            noise.stop(time + duration);
+        }
+
+        // Visualization code
+        const bassCircle = document.getElementById('bassCircle');
+        const melodyEmoji = document.getElementById('melodyEmoji');
+        const drumEmoji = document.getElementById('drumEmoji');
+
+        function animateBass() {
+            bassCircle.animate([
+                { r: 40 },
+                { r: 40.5 },
+                { r: 40 }
+            ], {
+                duration: 1000,
+                easing: 'ease-in-out'
+            });
+        }
+
+        function animateMelody() {
+            melodyEmoji.animate([
+                { transform: 'translateY(0)' },
+                { transform: 'translateY(-3px)' },
+                { transform: 'translateY(0)' }
+            ], {
+                duration: 600,
+                easing: 'ease-in-out'
+            });
+        }
+
+        function animateDrum() {
+            drumEmoji.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(1.05)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-in-out'
+            });
+        }
+
+        function playWalkingBass(time, duration, chordNotes) {
+            const bassLine = [chordNotes[0] / 4];
+            for (let i = 1; i < 4; i++) {
+                bassLine.push(chordNotes[Math.floor(Math.random() * chordNotes.length)] / 4);
+            }
+            bassLine.forEach((note, index) => {
+                playNote(note, time + index * duration / 4, duration / 4);
+                setTimeout(() => animateBass(), (time + index * duration / 4 - audioContext.currentTime) * 1000);
+            });
+        }
+
+        function playNote(frequency, time, duration) {
+            const synth = createSynth();
+            synth.osc.frequency.setValueAtTime(frequency, time);
+            synth.gain.gain.setValueAtTime(0, time);
+            synth.gain.gain.linearRampToValueAtTime(0.2, time + 0.01);
+            synth.gain.gain.linearRampToValueAtTime(0, time + duration - 0.01);
+            synth.osc.start(time);
+            synth.osc.stop(time + duration);
+            setTimeout(() => animateMelody(), (time - audioContext.currentTime) * 1000);
+        }
+
+        function playDrumPattern(time) {
+            const beatDuration = 0.5;
+            for (let i = 0; i < 4; i++) {
+                if (drumBarCount % 2 === 0) {
+                    if (i === 0) {
+                        playKick(time + i * beatDuration);
+                        setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                    }
+                } else {
+                    if (i === 0) {
+                        playSnare(time + i * beatDuration);
+                        setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                    }
+                }
+
+                if (Math.random() < 0.9) {
+                    playHiHat(time + i * beatDuration, 0.1);
+                }
+
+
+                                if (i !== 0 && Math.random() < 0.1) {
+                                    playKick(time + i * beatDuration);
+                                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                                }
+
+                                if (i === 3 && Math.random() < 0.1) {
+                                    playSnare(time + i * beatDuration);
+                                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                                }
+            }
+            drumBarCount++;
+        }
+
+        function playChord(time) {
+            const chord = progressions[currentProgressionIndex][currentChordIndex];
+            const notes = getChordNotes(chord);
+
+            notes.forEach((note, index) => {
+                playNote(note, time + index * 0.05, 1.95);
+            });
+
+            playWalkingBass(time, 2, notes);
+            playDrumPattern(time);
+            playDrumPattern(time + 1);
+
+            // Extended melody range
+            let melodyTime = time;
+            let lastDuration = 0.4;
+            while (melodyTime < time + 2) {
+                const note = notes[Math.floor(Math.random() * notes.length)];
+                const octave = Math.random() < 0.5 ? 1 : 2;
+                const duration = Math.random() < shortNoteProbability ? 0.2 : 0.4;
+                playNote(note * octave, melodyTime, duration);
+                melodyTime += duration;
+
+                if (duration === 0.2) {
+                    shortNoteProbability = Math.min(shortNoteProbability + 0.2, 0.8);
+                } else {
+                    shortNoteProbability = 0.4;
+                }
+                lastDuration = duration;
+            }
+
+            currentChordIndex++;
+            if (currentChordIndex >= progressions[currentProgressionIndex].length) {
+                currentChordIndex = 0;
+                currentProgressionIndex = (currentProgressionIndex + 1) % progressions.length;
+            }
+        }
+
+        function scheduler() {
+            while (nextNoteTime < audioContext.currentTime + 0.1) {
+                playChord(nextNoteTime);
+                nextNoteTime += 2; // 2 seconds per chord
+            }
+            if (isPlaying) {
+                requestAnimationFrame(scheduler);
+            }
+        }
+
+        document.getElementById('togglePlay').addEventListener('click', function() {
+            if (isPlaying) {
+                isPlaying = false;
+                this.textContent = 'Play';
+            } else {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                isPlaying = true;
+                nextNoteTime = audioContext.currentTime;
+                scheduler();
+                this.textContent = 'Pause';
+            }
+        });
+    </script>
+</body>
+</html>
