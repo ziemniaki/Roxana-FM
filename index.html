@@ -18,16 +18,36 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            flex-direction: column;
+        }
+        #shoutouts {
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            position: absolute;
+            top: 10px;
+            font-size: 36px;
+            font-weight: 300;
+        }
+        #shoutouts span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 30s linear infinite;
+        }
+        @keyframes marquee {
+            from { transform: translateX(100%); }
+            to { transform: translateX(-100%); }
         }
         #visualizer {
             width: 100%;
             height: 100%;
+            flex: 1;
         }
         #togglePlay {
             position: absolute;
             bottom: 20px;
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 25px;
             background-color: #0f3460;
             color: #e94560;
             border: none;
@@ -39,6 +59,9 @@
     </style>
 </head>
 <body>
+    <div id="shoutouts">
+        <span>S/O to: BURKIDDO 👑, Jacques Gary 👑, EMIL SHINOBI 👑, choroszcz_squad 👑, ROBERT G. 👑, pacia schab 👑, CJ... and you</span>
+    </div>
     <svg id="visualizer" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         <circle id="bassCircle" cx="50" cy="50" r="40" fill="#0f3460" />
         <text id="melodyEmoji" x="50" y="50" font-size="20" text-anchor="middle" dominant-baseline="middle">🕶</text>
@@ -51,6 +74,7 @@
     </script>
 </body>
 </html>
+
 
 
     <script>
