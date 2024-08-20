@@ -32,7 +32,7 @@
         #shoutouts span {
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 30s linear infinite;
+            animation: marquee 60s linear infinite;
         }
         @keyframes marquee {
             from { transform: translateX(100%); }
@@ -60,7 +60,7 @@
 </head>
 <body>
     <div id="shoutouts">
-        <span>S/O to: Zuzanna 🦋, BURKIDDO 👑, Jacques Gary 👑, EMIL SHINOBI 👑, choroszcz_squad 👑, ROBERT G. 👑, pacia schab 👑, ehh hahah 👑, CJ... and you</span>
+        <span>S/O to: Zuz S 🧚‍♀️, BURKIDDO 👑, Jacques Gary 👑, EMIL SHINOBI 👑, choroszcz_squad 👑, ROBERT G. 👑, pacia schab 👑, CJ... and you</span>
     </div>
     <svg id="visualizer" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         <circle id="bassCircle" cx="50" cy="50" r="40" fill="#0f3460" />
@@ -70,36 +70,36 @@
     <button id="togglePlay">Play Roxana FM ⏯</button>
 
     <script>
-        // (The rest of the JavaScript code remains unchanged)
-    </script>
-</body>
-</html>
-
-
-
-    <script>
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         let isPlaying = false;
         let currentChordIndex = 0;
-        let currentProgressionIndex = 0;
+        let currentProgressionIndex;
         let nextNoteTime = 0;
         let shortNoteProbability = 0.4;
         let drumBarCount = 0;
 
         const progressions = [
             ['Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'Bm7b5'],
+            ['Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'Em7', 'Dm7', 'Em7'],
             ['C', 'a', 'd', 'G'],
-            ['d', 'd', 'G', 'G'],
+            ['d', 'd', 'G', 'G', 'd', 'd', 'G', 'G7'],
             ['C', 'a', 'F', 'a'],
             ['a', 'a', 'e', 'e'],
             ['F', 'F', 'e', 'e'],
             ['C', 'd', 'e', 'd'],
-            ['a', 'a', 'F', 'e'],
-            ['a', 'a', 'F', 'F'],
+            ['a', 'a', 'F', 'e', 'a', 'a', 'F', 'e'],
+            ['a', 'a', 'F', 'F', 'a', 'a', 'F', 'F'],
             ['C', 'd', 'e', 'e'],
             ['a', 'G', 'F', 'e'],
-            ['C', 'C', 'd', 'd']
+            ['a', 'a', 'a', 'G', 'F', 'e'],
+            ['C', 'Cmaj7', 'd', 'd'],
+            ['Em7', 'Em7', 'Dm7', 'Cmaj7'],
+            ['a', 'a', 'G', 'F'],
         ];
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
 
         function createSynth() {
             const osc = audioContext.createOscillator();
@@ -196,7 +196,7 @@
         function animateBass() {
             bassCircle.animate([
                 { r: 40 },
-                { r: 40.5 },
+                { r: 41 },
                 { r: 40 }
             ], {
                 duration: 1000,
@@ -207,7 +207,7 @@
         function animateMelody() {
             melodyEmoji.animate([
                 { transform: 'translateY(0)' },
-                { transform: 'translateY(-3px)' },
+                { transform: 'translateY(-2px)' },
                 { transform: 'translateY(0)' }
             ], {
                 duration: 600,
@@ -263,20 +263,22 @@
                     }
                 }
 
-                if (Math.random() < 0.9) {
-                    playHiHat(time + i * beatDuration, 0.1);
+                if (Math.random() < 0.85) {
+                    // Here's where we implement the random open hi-hat
+                    const isOpenHiHat = Math.random() < 0.15; // 20% chance for open hi-hat
+                    const hiHatDuration = isOpenHiHat ? 0.4 : 0.1;
+                    playHiHat(time + i * beatDuration, hiHatDuration);
                 }
 
+                if (i !== 0 && Math.random() < 0.1) {
+                    playKick(time + i * beatDuration);
+                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                }
 
-                                if (i !== 0 && Math.random() < 0.1) {
-                                    playKick(time + i * beatDuration);
-                                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
-                                }
-
-                                if (i === 3 && Math.random() < 0.1) {
-                                    playSnare(time + i * beatDuration);
-                                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
-                                }
+                if (i === 3 && Math.random() < 0.1) {
+                    playSnare(time + i * beatDuration);
+                    setTimeout(() => animateDrum(), (time + i * beatDuration - audioContext.currentTime) * 1000);
+                }
             }
             drumBarCount++;
         }
@@ -314,7 +316,7 @@
             currentChordIndex++;
             if (currentChordIndex >= progressions[currentProgressionIndex].length) {
                 currentChordIndex = 0;
-                currentProgressionIndex = (currentProgressionIndex + 1) % progressions.length;
+                currentProgressionIndex = getRandomInt(progressions.length);
             }
         }
 
@@ -331,13 +333,18 @@
         document.getElementById('togglePlay').addEventListener('click', function() {
             if (isPlaying) {
                 isPlaying = false;
-                this.textContent = 'Play';
+                this.textContent = 'Play Roxana FM ⏯';
             } else {
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
                 isPlaying = true;
                 nextNoteTime = audioContext.currentTime;
+
+                // Initialize with a random progression here
+                currentProgressionIndex = getRandomInt(progressions.length);
+                currentChordIndex = 0;  // Reset chord index as well
+
                 scheduler();
                 this.textContent = 'Pause';
             }
